@@ -107,7 +107,7 @@
     "@modelcontextprotocol/sdk": "^1.27.1",
     "@qdrant/qdrant-js": "^1.17.0",
     "cheerio": "^1.2.0",
-    "langchain": "^1.2.28",
+    "langchain": "^1.2.32",
     "zod": "^4.3.6"
   },
   "devDependencies": {
