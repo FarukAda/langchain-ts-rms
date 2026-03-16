@@ -99,10 +99,10 @@
   },
   "dependencies": {
     "@extractus/article-extractor": "^8.0.20",
-    "@langchain/community": "^1.1.20",
+    "@langchain/community": "^1.1.23",
     "@langchain/core": "^1.1.29",
-    "@langchain/langgraph": "^1.2.0",
-    "@langchain/ollama": "^1.2.5",
+    "@langchain/langgraph": "^1.2.2",
+    "@langchain/ollama": "^1.2.6",
     "@langchain/qdrant": "^1.0.1",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "@qdrant/qdrant-js": "^1.17.0",
