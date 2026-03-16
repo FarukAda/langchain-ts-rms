@@ -1,0 +1,148 @@
+name: CI / Integration / Publish
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  # ── Stage 1: Fast validation ──────────────────────────────────────
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Build
+        run: npm run build
+
+      - name: Test (CI-safe suites)
+        run: npm run test:ci
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=high --omit=dev
+
+  # ── Stage 2: Agent integration tests (self-hosted GPU runner) ──────
+  integration-agent:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: validate
+    runs-on: [self-hosted, gpu]
+    timeout-minutes: 30
+    env:
+      QDRANT_URL: http://localhost:6333
+      OLLAMA_HOST: http://127.0.0.1:11434
+      OLLAMA_EMBEDDING_MODEL: nomic-embed-text
+      OLLAMA_CHAT_MODEL: qwen3:8b
+      SEARXNG_API_BASE: http://localhost:8080
+      RMS_AGENT_TEST: "1"
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify Ollama is reachable
+        run: |
+          try { $null = Invoke-RestMethod "$env:OLLAMA_HOST/api/tags" } catch {
+            Write-Error "Ollama is not running at $env:OLLAMA_HOST. Start it before the runner picks up jobs."
+            exit 1
+          }
+          Write-Host "Ollama is reachable"
+
+      - name: Verify Qdrant is reachable
+        run: |
+          try { $null = Invoke-RestMethod "$env:QDRANT_URL/readyz" } catch {
+            Write-Error "Qdrant is not running at $env:QDRANT_URL. Start it before the runner picks up jobs."
+            exit 1
+          }
+          Write-Host "Qdrant is reachable"
+
+      - name: Verify SearXNG is reachable
+        run: |
+          try { $null = Invoke-RestMethod "$env:SEARXNG_API_BASE/search?q=test&format=json" } catch {
+            Write-Error "SearXNG is not running at $env:SEARXNG_API_BASE. Start it before the runner picks up jobs."
+            exit 1
+          }
+          Write-Host "SearXNG is reachable"
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Run agent tests
+        run: npm run test:agent
+
+  # ── Stage 3: Publish to npm (main only, after all tests pass) ─────
+  publish:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: integration-agent
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version: "22"
+          cache: "npm"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish to npm
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          gh release create "v${VERSION}" \
+            --title "v${VERSION}" \
+            --generate-notes

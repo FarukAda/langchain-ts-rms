@@ -1,0 +1,134 @@
+{
+  "name": "@farukada/langchain-ts-rms",
+  "version": "0.1.0",
+  "description": "Research Management Service built with LangChain TypeScript — intelligent research with RAG caching, SearXNG web search, and LLM summarization",
+  "license": "MIT",
+  "author": "Faruk Ada <info@farukada.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FarukAda/langchain-ts-rms.git"
+  },
+  "bugs": {
+    "url": "https://github.com/FarukAda/langchain-ts-rms/issues"
+  },
+  "homepage": "https://github.com/FarukAda/langchain-ts-rms#readme",
+  "keywords": [
+    "langchain",
+    "langgraph",
+    "research-management",
+    "rag",
+    "vector-search",
+    "qdrant",
+    "ollama",
+    "searxng",
+    "ai-agent",
+    "autonomous-agents",
+    "structured-output",
+    "web-search",
+    "summarization",
+    "typescript"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "main": "dist/lib/index.js",
+  "types": "dist/lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/lib/index.d.ts",
+      "default": "./dist/lib/index.js"
+    },
+    "./tool": {
+      "types": "./dist/lib/rmsTool.d.ts",
+      "default": "./dist/lib/rmsTool.js"
+    },
+    "./tools/*": {
+      "types": "./dist/lib/tools/*.d.ts",
+      "default": "./dist/lib/tools/*.js"
+    },
+    "./helpers": {
+      "types": "./dist/lib/helpers.d.ts",
+      "default": "./dist/lib/helpers.js"
+    },
+    "./types": {
+      "types": "./dist/lib/types.d.ts",
+      "default": "./dist/lib/types.js"
+    },
+    "./schemas/research": {
+      "types": "./dist/lib/schemas/researchSchemas.d.ts",
+      "default": "./dist/lib/schemas/researchSchemas.js"
+    },
+    "./schemas/lifecycle": {
+      "types": "./dist/lib/schemas/lifecycleSchemas.d.ts",
+      "default": "./dist/lib/schemas/lifecycleSchemas.js"
+    },
+    "./mcp": {
+      "types": "./dist/mcp/index.d.ts",
+      "default": "./dist/mcp/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint src tests",
+    "lint:fix": "eslint --fix src tests",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "test": "vitest run tests/unit",
+    "test:ci": "cross-env CI=true vitest run tests/unit",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage tests/unit",
+    "test:agent": "cross-env RMS_AGENT_TEST=1 OLLAMA_HOST=http://127.0.0.1:11434 QDRANT_URL=http://localhost:6333 SEARXNG_API_BASE=http://localhost:8080 vitest run tests/agent --reporter=verbose --reporter=allure-vitest/reporter",
+    "allure:generate": "npx rimraf allure-report && npx allure generate -o allure-report",
+    "allure:open": "npx allure open allure-report",
+    "test:allure": "npx rimraf allure-results allure-report && npm run test && npm run test:agent && npm run allure:generate && npm run allure:open",
+    "typecheck": "tsc --noEmit",
+    "docker:up": "docker compose up -d qdrant searxng",
+    "docker:up:all": "docker compose up -d qdrant searxng && docker compose --profile ollama up -d ollama",
+    "docker:down": "docker compose down"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@extractus/article-extractor": "^8.0.20",
+    "@langchain/community": "^1.1.20",
+    "@langchain/core": "^1.1.29",
+    "@langchain/langgraph": "^1.2.0",
+    "@langchain/ollama": "^1.2.5",
+    "@langchain/qdrant": "^1.0.1",
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "@qdrant/qdrant-js": "^1.17.0",
+    "cheerio": "^1.2.0",
+    "langchain": "^1.2.28",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^25.3.2",
+    "@vitest/coverage-v8": "^4.0.18",
+    "@vitest/ui": "^4.0.18",
+    "allure-js-commons": "^3.5.0",
+    "allure-vitest": "^3.5.0",
+    "cross-env": "^10.1.0",
+    "eslint": "^10.0.2",
+    "prettier": "^3.8.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.56.1",
+    "vitest": "^4.0.18"
+  },
+  "overrides": {
+    "minimatch": ">=10.2.1",
+    "@browserbasehq/stagehand": {
+      "zod": "$zod"
+    }
+  }
+}

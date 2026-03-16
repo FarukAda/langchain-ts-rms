@@ -1,0 +1,323 @@
+# ────────────────────────────────────────────────────────────────────
+# SearXNG – Comprehensive engine config for RMS research agent
+#
+# This config is optimised for DEEP, BROAD research across all domains:
+#   • Software engineering (repos, packages, Q&A, docs, security)
+#   • Academic / scientific (papers, datasets, publications)
+#   • General knowledge (encyclopaedias, definitions, search engines)
+#   • News & tech media
+#
+# Design:
+#   • use_default_settings: true  → all defaults as baseline
+#   • We then DISABLE problematic engines (Google web — bot blocking)
+#   • And explicitly ENABLE engines disabled-by-default that we need
+#   • Weights control result ranking (1.0 = default, higher = prefer)
+#
+# Google Scholar is KEPT enabled — it has lighter bot detection than
+# Google web search and is irreplaceable for academic literature.
+# ────────────────────────────────────────────────────────────────────
+
+use_default_settings: true
+
+server:
+  secret_key: "rms-dev-key"        # change in production
+  limiter: false                    # private instance — no rate limiting
+  image_proxy: false                # not needed for text-only agent research
+  method: "GET"                     # simpler for programmatic API clients
+
+search:
+  safe_search: 0                    # no filtering — agent decides relevance
+  default_lang: "en"                # English-first (agent can override per query)
+  autocomplete: ""                  # not needed for API access
+  formats:
+    - html
+    - json
+  # Reduced suspension times — faster recovery for a private instance
+  suspended_times:
+    SearxEngineAccessDenied: 600        # 10 min  (default 24h)
+    SearxEngineCaptcha: 3600            # 1 hour  (default 24h)
+    SearxEngineTooManyRequests: 300     # 5 min   (default 1h)
+    cf_SearxEngineCaptcha: 86400        # 1 day   (default 15 days)
+    cf_SearxEngineAccessDenied: 3600    # 1 hour  (default 24h)
+    recaptcha_SearxEngineCaptcha: 86400 # 1 day   (default 7 days)
+
+outgoing:
+  request_timeout: 5.0              # 5s per engine (default 2s too tight)
+  max_request_timeout: 15.0         # hard ceiling for slow engines
+  pool_connections: 100             # concurrent engine connections
+  pool_maxsize: 20                  # keep-alive slots
+  enable_http2: true
+  useragent_suffix: ""              # stay anonymous
+  retries: 1                        # one retry on transient HTTP errors
+
+# ═══════════════════════════════════════════════════════════════════
+# ENGINE CONFIGURATION
+# ═══════════════════════════════════════════════════════════════════
+#
+# Strategy: start from defaults, then override:
+#   disabled: true   → turn OFF a default-enabled engine
+#   disabled: false  → turn ON  a default-disabled engine
+#   weight: N        → ranking influence (default 1, higher = stronger)
+#   timeout: N       → per-engine timeout override (seconds)
+#
+engines:
+
+  # ─── GENERAL WEB: Disabled (bot-blocking) ───────────────────────
+  - name: google
+    disabled: true              # aggressively blocks metasearch
+  - name: startpage
+    disabled: true              # proxied Google — same issues
+
+  # ─── GENERAL WEB: Primary tier ──────────────────────────────────
+  - name: duckduckgo
+    disabled: false
+    weight: 1.5                 # very tolerant, great general coverage
+
+  - name: brave
+    disabled: false
+    weight: 1.5                 # excellent API tolerance, independent index
+
+  - name: bing
+    disabled: false
+    weight: 1.2
+
+  - name: qwant
+    disabled: false
+    weight: 1.0
+
+  # ─── GENERAL WEB: Secondary tier ────────────────────────────────
+  - name: yahoo
+    disabled: false
+    weight: 0.8
+
+  - name: mojeek
+    disabled: false             # independent index — good for diversity
+    weight: 0.8
+
+  - name: stract
+    disabled: false             # open-source search engine
+    weight: 0.6
+
+  # ─── KNOWLEDGE & ENCYCLOPAEDIA ──────────────────────────────────
+  - name: wikipedia
+    disabled: false
+    weight: 1.5                 # excellent for factual/encyclopaedic queries
+
+  - name: wikidata
+    disabled: false
+    weight: 1.2                 # structured data for entity queries
+
+  - name: wikibooks
+    disabled: false
+    weight: 0.6
+
+  - name: wikiquote
+    disabled: false
+    weight: 0.4
+
+  - name: wikisource
+    disabled: false
+    weight: 0.4
+
+  - name: wikiversity
+    disabled: false
+    weight: 0.4
+
+  - name: ddg definitions
+    disabled: false
+    weight: 1.0                 # quick definitions & instant answers
+
+  - name: wolframalpha
+    disabled: false             # computation & structured facts
+    weight: 0.8
+    timeout: 8
+
+  # ─── ACADEMIC & SCIENTIFIC PUBLICATIONS ─────────────────────────
+  - name: google scholar
+    disabled: false             # KEEP — lighter bot detection than web
+    weight: 1.5                 # irreplaceable for academic literature
+
+  - name: arxiv
+    disabled: false
+    weight: 1.3                 # preprints: CS, physics, math
+
+  - name: semantic scholar
+    disabled: false
+    weight: 1.2                 # AI-powered academic search
+
+  - name: crossref
+    disabled: false
+    weight: 1.0                 # DOI metadata, citation data
+    timeout: 30                 # crossref is slow — use its default
+
+  - name: pubmed
+    disabled: false
+    weight: 1.0                 # biomedical/life sciences
+
+  - name: openalex
+    disabled: false             # open scholarly metadata
+    weight: 0.8
+    timeout: 5
+
+  - name: openairedatasets
+    disabled: false
+    weight: 0.6
+    timeout: 5
+
+  - name: openairepublications
+    disabled: false
+    weight: 0.6
+    timeout: 5
+
+  # ─── CODE REPOSITORIES (repos group) ────────────────────────────
+  - name: github
+    disabled: false
+    weight: 1.5                 # primary code search
+
+  - name: gitlab
+    disabled: false
+    weight: 1.2
+
+  - name: bitbucket
+    disabled: false
+    weight: 1.0
+    timeout: 4
+
+  - name: codeberg
+    disabled: false             # FOSS alternative
+    weight: 0.8
+
+  - name: sourcehut
+    disabled: false
+    weight: 0.6
+
+  - name: huggingface
+    disabled: false             # ML models
+    weight: 1.0
+
+  - name: huggingface datasets
+    disabled: false
+    weight: 0.8
+
+  - name: huggingface spaces
+    disabled: false
+    weight: 0.6
+
+  # ─── DEVELOPER Q&A (q&a group) ──────────────────────────────────
+  - name: stackoverflow
+    disabled: false
+    weight: 1.5                 # essential for programming knowledge
+
+  - name: superuser
+    disabled: false
+    weight: 0.8                 # sysadmin / power-user questions
+
+  - name: askubuntu
+    disabled: false
+    weight: 0.6                 # Linux/Ubuntu specific
+
+  # ─── PACKAGE REGISTRIES (packages group) ────────────────────────
+  - name: npm
+    disabled: false
+    weight: 0.8
+    timeout: 5
+
+  - name: pypi
+    disabled: false
+    weight: 0.8
+
+  - name: docker hub
+    disabled: false
+    weight: 0.8
+
+  - name: crates.io
+    disabled: false             # Rust packages
+    weight: 0.5
+    timeout: 6
+
+  - name: packagist
+    disabled: false             # PHP/Composer packages
+    weight: 0.4
+    timeout: 5
+
+  - name: pkg.go.dev
+    disabled: false             # Go packages
+    weight: 0.4
+
+  - name: pub.dev
+    disabled: false             # Dart/Flutter packages
+    weight: 0.3
+
+  - name: hex
+    disabled: false             # Elixir/Erlang packages
+    weight: 0.3
+
+  - name: rubygems
+    disabled: false             # Ruby packages
+    weight: 0.3
+
+  # ─── DEVELOPER DOCS & REFERENCES ────────────────────────────────
+  - name: mdn
+    disabled: false
+    weight: 1.2                 # Mozilla Developer Network — web standards
+
+  - name: arch linux wiki
+    disabled: false
+    weight: 0.8                 # deep Linux documentation
+
+  - name: mankier
+    disabled: false
+    weight: 0.6                 # man pages
+
+  - name: microsoft learn
+    disabled: false
+    weight: 0.6
+
+  # ─── TECH NEWS & COMMUNITY ──────────────────────────────────────
+  - name: hackernews
+    disabled: false
+    weight: 0.8
+
+  - name: lobste.rs
+    disabled: false             # curated tech community
+    weight: 0.6
+    timeout: 5
+
+  # ─── SECURITY ───────────────────────────────────────────────────
+  - name: national vulnerability database
+    disabled: false
+    weight: 0.8                 # CVE / security vulnerability search
+
+  # ─── NEWS (default engines mostly fine, disable Google News) ────
+  - name: google news
+    disabled: true              # same blocking as Google web
+
+  - name: bing news
+    disabled: false
+    weight: 1.0
+
+  - name: brave.news
+    disabled: false
+    weight: 1.0
+
+  - name: duckduckgo news
+    disabled: false
+    weight: 1.0
+
+  - name: yahoo news
+    disabled: false
+    weight: 0.8
+
+  - name: qwant news
+    disabled: false
+    weight: 0.8
+
+  # ─── IMAGES: keep defaults but disable Google ──────────────────
+  - name: google images
+    disabled: true
+  - name: google videos
+    disabled: true
+  - name: google play apps
+    disabled: true
+  - name: google play movies
+    disabled: true
