@@ -61,6 +61,39 @@ export function wrapToolResponse(data: Record<string, unknown>): string {
 }
 
 /**
+ * Recursively replaces `NaN` and `Infinity` with a safe fallback (default: `0`).
+ *
+ * JavaScript's `JSON.stringify` silently converts `NaN`/`Infinity` to `null`,
+ * but Qdrant's Go-based REST layer rejects payloads containing non-finite
+ * numbers with `"json: unsupported value: NaN"`. This sanitizer prevents
+ * that boundary failure.
+ */
+export function sanitizeNumericValues(
+  value: Record<string, unknown>,
+  fallback = 0,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(value)) {
+    out[k] = sanitizeValue(v, fallback);
+  }
+  return out;
+}
+
+function sanitizeValue(value: unknown, fallback: number): unknown {
+  if (value === null || value === undefined) return value;
+  if (typeof value === "number") return Number.isFinite(value) ? value : fallback;
+  if (Array.isArray(value)) return value.map((item: unknown) => sanitizeValue(item, fallback));
+  if (typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      out[k] = sanitizeValue(v, fallback);
+    }
+    return out;
+  }
+  return value;
+}
+
+/**
  * Fetches a research entry by ID or throws a domain error.
  */
 export async function getResearchOrThrow(

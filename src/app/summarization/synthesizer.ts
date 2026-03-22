@@ -1,7 +1,7 @@
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import type { SourceSummary } from "./summarizer.js";
-import { SynthesisOutputSchema, type SynthesisOutput } from "./synthesisSchema.js";
+import { SynthesisOutputSchema } from "./synthesisSchema.js";
 import { logInfo, logWarn, logError, ErrorCodes } from "../../infra/observability/tracing.js";
 
 // ── Public types ────────────────────────────────────────────────────
@@ -89,7 +89,7 @@ export async function synthesizeSummary(
       name: "research_synthesis",
     });
 
-    const result: SynthesisOutput = await structuredModel.invoke([
+    const result = await structuredModel.invoke([
       new SystemMessage(SYSTEM_PROMPT),
       new HumanMessage(humanMsg),
     ]);
@@ -99,13 +99,13 @@ export async function synthesizeSummary(
       researchId: subject,
       summaryLength: result.synthesizedSummary.length,
       keyFindingsCount: result.keyFindings.length,
-      limitationsCount: result.limitations.length,
+      limitationsCount: result.limitations?.length ?? 0,
     });
 
     return {
       synthesizedSummary: result.synthesizedSummary.trim(),
       keyFindings: result.keyFindings.map((f) => f.trim()),
-      limitations: result.limitations.map((l) => l.trim()),
+      limitations: (result.limitations ?? []).map((l) => l.trim()),
     };
   } catch (err) {
     logError("Synthesis failed, returning fallback", {

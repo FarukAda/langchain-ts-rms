@@ -3,7 +3,6 @@ import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import type { SearxngSearchResult } from "../../infra/search/searxngClient.js";
 import { logInfo, logWarn } from "../../infra/observability/tracing.js";
 import { SourceSummaryOutputSchema } from "./summarizationSchema.js";
-import type { SourceSummaryOutput } from "./summarizationSchema.js";
 import { batchExtractContent } from "../../infra/content/contentExtractor.js";
 import type { ExtractionMethod } from "../../infra/content/contentExtractor.js";
 
@@ -111,18 +110,21 @@ async function summarizeSingleSource(
       name: "source_summary",
     });
 
-    let result: SourceSummaryOutput = await structuredModel.invoke([
+    let result = await structuredModel.invoke([
       new SystemMessage(SYSTEM_PROMPT),
       new HumanMessage(humanMsg),
     ]);
 
     // Quality gate: if takeaway is too thin, retry once with reinforced prompt
     if (result.keyTakeaways.trim().length < MIN_TAKEAWAY_LENGTH) {
-      logWarn(`Source [${String(sourceIndex + 1)}/${String(totalSources)}] takeaway too thin, retrying`, {
-        node: "summarizer",
-        url: searchResult.url,
-        takeawayLength: result.keyTakeaways.trim().length,
-      });
+      logWarn(
+        `Source [${String(sourceIndex + 1)}/${String(totalSources)}] takeaway too thin, retrying`,
+        {
+          node: "summarizer",
+          url: searchResult.url,
+          takeawayLength: result.keyTakeaways.trim().length,
+        },
+      );
 
       const retryMsg =
         humanMsg +
@@ -147,16 +149,19 @@ async function summarizeSingleSource(
       url: searchResult.url,
       title: searchResult.title,
       keyTakeaways: result.keyTakeaways.trim(),
-      relevance: Math.min(1, Math.max(0, result.relevance)),
-      tags: result.tags,
-      language: result.language,
+      relevance: Math.min(1, Math.max(0, result.relevance ?? 0.5)),
+      tags: result.tags ?? [],
+      language: result.language ?? "en",
     };
   } catch (err) {
-    logWarn(`Source [${String(sourceIndex + 1)}/${String(totalSources)}] summarization failed, using degraded fallback`, {
-      node: "summarizer",
-      url: searchResult.url,
-      error: err instanceof Error ? err.message : String(err),
-    });
+    logWarn(
+      `Source [${String(sourceIndex + 1)}/${String(totalSources)}] summarization failed, using degraded fallback`,
+      {
+        node: "summarizer",
+        url: searchResult.url,
+        error: err instanceof Error ? err.message : String(err),
+      },
+    );
 
     // Degraded fallback: use the snippet as-is with zero relevance
     return {
@@ -249,9 +254,13 @@ function buildSummarizationResult(
   sourceSummaries: SourceSummary[],
   extractionBreakdown: ExtractionDetail[] = [],
 ): SummarizationResult {
-  // Weighted confidence: only relevant sources count, weighted by relevance
-  const relevantSources = sourceSummaries.filter((s) => s.relevance >= 0.3);
-  const overallConfidence =
+  // Weighted confidence: only relevant sources count, weighted by relevance.
+  // NaN >= 0.3 is false, so NaN-relevance sources are excluded by the filter.
+  // The final Number.isFinite guard catches any remaining arithmetic edge cases.
+  const relevantSources = sourceSummaries.filter(
+    (s) => Number.isFinite(s.relevance) && s.relevance >= 0.3,
+  );
+  const rawConfidence =
     relevantSources.length > 0
       ? Math.min(
           1,
@@ -261,6 +270,7 @@ function buildSummarizationResult(
           ),
         )
       : 0.1;
+  const overallConfidence = Number.isFinite(rawConfidence) ? rawConfidence : 0.1;
 
   const allTags = normalizeTags(sourceSummaries.flatMap((s) => s.tags));
 

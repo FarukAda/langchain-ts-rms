@@ -54,7 +54,12 @@ describe("summarizeSearchResults (per-source sequential)", () => {
   it("produces one SourceSummary per search result", async () => {
     const mockChatModel = createMockChatModel([
       { keyTakeaways: MOCK_TAKEAWAYS, relevance: 0.9, tags: ["ai-safety"], language: "en" },
-      { keyTakeaways: MOCK_TAKEAWAYS_NN, relevance: 0.7, tags: ["neural-networks"], language: "en" },
+      {
+        keyTakeaways: MOCK_TAKEAWAYS_NN,
+        relevance: 0.7,
+        tags: ["neural-networks"],
+        language: "en",
+      },
     ]);
 
     const result = await summarizeSearchResults("AI safety", mockSearchResults, mockChatModel);

@@ -109,7 +109,7 @@ export async function evaluateQueryRelevance(
         new HumanMessage(humanMsg),
       ]);
 
-      const relevanceScore = Math.min(1, Math.max(0, result.relevanceScore));
+      const relevanceScore = Math.min(1, Math.max(0, result.relevanceScore ?? 0.5));
       const isRelevant = result.isRelevant && relevanceScore >= MIN_RELEVANCE_SCORE;
 
       logInfo("Query relevance evaluated", {

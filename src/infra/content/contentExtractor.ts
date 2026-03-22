@@ -225,7 +225,12 @@ export async function extractContent(
       url,
       extractedLength: articleText.length,
     });
-    return { text: articleText, extractedLength: articleText.length, wasExtracted: true, extractionMethod: "article-extractor" };
+    return {
+      text: articleText,
+      extractedLength: articleText.length,
+      wasExtracted: true,
+      extractionMethod: "article-extractor",
+    };
   }
 
   // ── Tier 2: Direct fetch + Cheerio (existing pipeline) ──
@@ -300,7 +305,12 @@ export async function extractContent(
       url,
       error: err instanceof Error ? err.message : String(err),
     });
-    return { text: fallbackSnippet, extractedLength: fallbackSnippet.length, wasExtracted: false, extractionMethod: "snippet" };
+    return {
+      text: fallbackSnippet,
+      extractedLength: fallbackSnippet.length,
+      wasExtracted: false,
+      extractionMethod: "snippet",
+    };
   }
 }
 

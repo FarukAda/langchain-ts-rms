@@ -127,7 +127,6 @@
   },
   "overrides": {
     "minimatch": ">=10.2.1",
-    "zod": "$zod",
     "@browserbasehq/stagehand": {
       "zod": "$zod"
     }

@@ -57,9 +57,7 @@ export function isBlockedUrl(url: string, blocklist?: readonly string[]): boolea
     return false;
   }
 
-  return domains.some(
-    (blocked) => hostname === blocked || hostname.endsWith(`.${blocked}`),
-  );
+  return domains.some((blocked) => hostname === blocked || hostname.endsWith(`.${blocked}`));
 }
 
 /**
@@ -70,10 +68,7 @@ export function isBlockedUrl(url: string, blocklist?: readonly string[]): boolea
  * @param getUrl  - Accessor to extract the URL from each item
  * @returns Filtered array with blocked items removed
  */
-export function filterBlockedUrls<T>(
-  items: readonly T[],
-  getUrl: (item: T) => string,
-): T[] {
+export function filterBlockedUrls<T>(items: readonly T[], getUrl: (item: T) => string): T[] {
   const blocklist = getBlockedDomains();
   const filtered = items.filter((item) => !isBlockedUrl(getUrl(item), blocklist));
   const removedCount = items.length - filtered.length;

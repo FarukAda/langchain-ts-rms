@@ -99,7 +99,12 @@ export async function conductResearchDirect(
   options?: { threadId?: string },
 ): Promise<
   | { research: Research; source: string; wasRefreshed: boolean }
-  | { error: string; interrupted?: boolean; extractionBreakdown?: ExtractionDetail[] | undefined; confidence?: number | undefined }
+  | {
+      error: string;
+      interrupted?: boolean;
+      extractionBreakdown?: ExtractionDetail[] | undefined;
+      confidence?: number | undefined;
+    }
 > {
   const workflow = getOrCreateWorkflow(deps);
   // Coerce nullable schema values to workflow-expected types

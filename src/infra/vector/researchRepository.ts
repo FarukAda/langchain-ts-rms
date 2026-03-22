@@ -12,6 +12,7 @@ import type {
 } from "../../domain/ports.js";
 import { RESEARCH_COLLECTION, createQdrantClient } from "./qdrantClient.js";
 import { logInfo, logWarn, logDebug } from "../observability/tracing.js";
+import { sanitizeNumericValues } from "../../lib/helpers.js";
 
 // Re-export port types for backward compatibility
 export type {
@@ -31,28 +32,31 @@ export type { IResearchRepository } from "../../domain/ports.js";
 const MAX_EMBED_CHARS = 24_000;
 
 function researchToDocument(research: Research): Document {
+  // Sanitize all numeric values in the payload to prevent Qdrant's Go REST
+  // layer from rejecting NaN/Infinity with "json: unsupported value: NaN".
+  const metadata = sanitizeNumericValues({
+    research_id: research.id,
+    subject: research.subject,
+    source_urls: research.sourceUrls,
+    search_queries: research.searchQueries,
+    source_summaries: research.sourceSummaries,
+    key_findings: research.keyFindings,
+    limitations: research.limitations,
+    created_at: research.createdAt,
+    updated_at: research.updatedAt,
+    expires_at: research.expiresAt,
+    status: research.status,
+    confidence_score: research.confidenceScore,
+    source_count: research.sourceCount,
+    tenant_id: research.tenantId,
+    tags: research.tags,
+    language: research.language,
+    raw_result_count: research.rawResultCount,
+    ...research.metadata,
+  });
   return {
     pageContent: research.summary.slice(0, MAX_EMBED_CHARS),
-    metadata: {
-      research_id: research.id,
-      subject: research.subject,
-      source_urls: research.sourceUrls,
-      search_queries: research.searchQueries,
-      source_summaries: research.sourceSummaries,
-      key_findings: research.keyFindings,
-      limitations: research.limitations,
-      created_at: research.createdAt,
-      updated_at: research.updatedAt,
-      expires_at: research.expiresAt,
-      status: research.status,
-      confidence_score: research.confidenceScore,
-      source_count: research.sourceCount,
-      tenant_id: research.tenantId,
-      tags: research.tags,
-      language: research.language,
-      raw_result_count: research.rawResultCount,
-      ...research.metadata,
-    },
+    metadata,
   };
 }
 
