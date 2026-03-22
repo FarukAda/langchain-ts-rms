@@ -324,6 +324,7 @@ describe.skipIf(!AGENT_TEST)(`RMS Agent Integration (model: ${CHAT_MODEL})`, () 
           backoffFactor: 2,
         }),
         rmsToolErrorMiddleware,
+        // @ts-expect-error -- zod v3/v4 interop: ToolCallLimitConfig resolves to `never` due to InferInteropZodInput structural mismatch
         toolCallLimitMiddleware({ runLimit: 10 }),
       ],
       systemPrompt:
